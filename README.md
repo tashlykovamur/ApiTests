@@ -1,12 +1,12 @@
 ### В проекте содержатся тесты на HTTP методы:
 
 * GET /characters
-* GET /character?name=
+* GET /character?name
 * POST /character
 * PUT /character
-* DELETE /character?name=
+* DELETE /character?name
 
-###Установка
+### Установка
 #### Установка python 3
 ```bash
 python3 -m venv venv
