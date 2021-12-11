@@ -1,8 +1,10 @@
 import pytest
 from hamcrest import assert_that, equal_to, contains_string
 from framework.client import HttpClient
-import urllib.parse
 import allure
+from http import HTTPStatus
+from constants import CHARACTER_PATH
+from framework.helpers import parsed
 
 
 class TestCreateCharacters:
@@ -22,20 +24,20 @@ class TestCreateCharacters:
                 "identity": "Publicly known"
             }
             response = HttpClient.create_character(
-                url='/character',
+                url=CHARACTER_PATH,
                 auth=auth,
                 json=payload
             )
 
         with allure.step('Проверить, что работает создание нового героя'):
-            assert_that(response.status_code, equal_to(200),
+            assert_that(response.status_code, equal_to(HTTPStatus.OK),
                         'При корректно заполненном поле "name" герой должен создаваться ')
 
         with allure.step(f'Проверить с помощью вызова /GET, что герой с именем \"{hero_name}\" появился в базе'):
             response = HttpClient.get_character(
-                url=f'/character?name={urllib.parse.quote_plus(hero_name)}',
+                url=f'{CHARACTER_PATH}?name={parsed(hero_name)}',
                 auth=auth)
-            assert_that(response.status_code, equal_to(200),
+            assert_that(response.status_code, equal_to(HTTPStatus.OK),
                         'Созданный герой с корректно заполненным полем "name" должен присутствовать в базе')
 
     @allure.description('Создание героя под неавторизованным пользователем')
@@ -47,12 +49,12 @@ class TestCreateCharacters:
                 "identity": "Publicly known"
             }
             response = HttpClient.create_character(
-                url='/character',
+                url=CHARACTER_PATH,
                 json=payload
             )
 
         with allure.step('Проверить, что нельзя создать нового героя'):
-            assert_that(response.status_code, equal_to(401),
+            assert_that(response.status_code, equal_to(HTTPStatus.UNAUTHORIZED),
                         'Нельзя создать героя под неавторизованным пользователем')
 
     @allure.description('Создание героя с именем, которое уже существует в базе')
@@ -64,13 +66,13 @@ class TestCreateCharacters:
                 "identity": "Publicly known"
             }
             response = HttpClient.create_character(
-                url='/character',
+                url=CHARACTER_PATH,
                 auth=auth,
                 json=payload
             )
 
         with allure.step('Проверить, что нельзя создать дубликат героя'):
-            assert_that(response.status_code, equal_to(400),
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
                         'Нельзя создать двух героев с одинаковым именем')
             assert_that(response.text, contains_string(f'{get_exist_hero_name} is already exists'),
                         'Должно приходить сообщение о том, что такой герой уже существует')
@@ -93,12 +95,12 @@ class TestCreateCharacters:
                 "identity": "Publicly known"
             }
             response = HttpClient.create_character(
-                url='/character',
+                url=CHARACTER_PATH,
                 auth=auth,
                 json=payload
             )
         with allure.step('Проверить, что нельзя создать нового героя'):
-            assert_that(response.status_code, equal_to(400),
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
                         f'Герой не должен создаваться {by_invalid_name}')
 
     @allure.description('Создание героя без обязательного поля "name"')
@@ -109,13 +111,13 @@ class TestCreateCharacters:
                 "identity": "Publicly known"
             }
             response = HttpClient.create_character(
-                url='/character',
+                url=CHARACTER_PATH,
                 auth=auth,
                 json=payload
             )
 
         with allure.step('Проверить, что не работает создание нового героя'):
-            assert_that(response.status_code, equal_to(400),
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
                         'Нельзя создать героя без обязательного поля "name"')
             assert_that(response.text, contains_string('Missing data for required field'),
                         'Должно приходить сообщение об обязательности заполнения поля')
@@ -126,7 +128,7 @@ class TestCreateCharacters:
             response = fill_database
 
         with allure.step('Проверить, что при переполнении базы приходит ошибка'):
-            assert_that(response.status_code, equal_to(400),
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
                         'При переполнении базы нельзя добавлять новые записи')
             assert_that(response.text, contains_string('Collection can\'t contain more than 500 items'),
                         'При превышении вместимости базы должно приходить сообщение о невозможности хранения более 500 '
