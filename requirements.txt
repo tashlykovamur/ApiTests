@@ -1,0 +1,4 @@
+requests
+allure-pytest
+pytest
+PyHamcrest
