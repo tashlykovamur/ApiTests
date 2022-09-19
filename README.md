@@ -17,7 +17,7 @@ pip install pip --upgrade
 #### Клонирование репозитория
 ```bash
 bash
-git clone https://github.com/tashlykovamur/ApiTestsIvi.git
+git clone https://github.com/tashlykovamur/ApiTests.git
 ```
 
 #### Установка файла с библиотеками
