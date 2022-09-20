@@ -8,36 +8,28 @@ import allure
 from constants import CHARACTER_PATH
 from framework.helpers import parsed
 
-
+client = HttpClient()
 class TestDeleteCharacters:
 
     @allure.description('Удаление существующего героя под авторизованным пользователем')
     def test_delete_exist_character(self, reset, get_exist_hero_name, auth):
-        allure.step('Достать из базы существующего героя по полю "name"')
+        with allure.step('Отправляем запрос на удаление найденного героя будучи авторизованным'):
+            response = client.delete_character(name=parsed(get_exist_hero_name), auth=auth)
 
-        with allure.step('Удалить найденного героя будучи авторизованным'):
-            response = HttpClient.delete_character(
-                url=f'{CHARACTER_PATH}?name={parsed(get_exist_hero_name)}',
-                auth=auth
-            )
-            assert_that(response.status_code, equal_to(HTTPStatus.OK), 'Должно работать удаление существующего героя')
+        with allure.step('Проверяем, что запрос с удалением вернул статус код 200'):
+            assert_that(response.status_code, equal_to(HTTPStatus.OK))
 
-        with allure.step('Поверить, что удаленного героя больше нет в базе'):
-            response_after_delete = HttpClient.get_character(url=f'{CHARACTER_PATH}?name={parsed(get_exist_hero_name)}',
-                                                             auth=auth)
-            assert_that(response_after_delete.status_code, equal_to(HTTPStatus.BAD_REQUEST),
-                        'Удаленного героя не должно быть в базе')
+        with allure.step('Проверяем, что удаленного героя нет в базе'):
+            response_after_delete = client.get_character(name=parsed(get_exist_hero_name), auth=auth)
+            assert_that(response_after_delete.status_code, equal_to(HTTPStatus.BAD_REQUEST))
 
     @allure.description('Удаление героя под неавторизованным пользователем')
     def test_delete_character_wo_auth(self, reset, get_exist_hero_name):
-        with allure.step('Удалить героя, не указывая username и password'):
-            response = HttpClient.delete_character(
-                url=f'{CHARACTER_PATH}?name={parsed(get_exist_hero_name)}',
-            )
+        with allure.step('Отправляем запрос на удаление героя без указания username и password'):
+            response = client.delete_character(name=parsed(get_exist_hero_name))
 
-        with allure.step('Поверить, что нельзя удалить героя'):
-            assert_that(response.status_code, equal_to(HTTPStatus.UNAUTHORIZED),
-                        'Не должно работать удаление героя под неавторизованным пользователем')
+        with allure.step('Проверяем, что в ответ приходит статус код 401 и сообщение об ошибке'):
+            assert_that(response.status_code, equal_to(HTTPStatus.UNAUTHORIZED))
             assert_that(response.text, contains_string('You have to login with proper credentials'),
                         'При попытке удалить героя без авторизации '
                         'должно приходить сообщение о необходимости залогиниться')
@@ -45,8 +37,7 @@ class TestDeleteCharacters:
     @pytest.mark.parametrize(
         ('invalid_data', 'by_invalid_name'),
         [
-            (None, 'cо значением null в поле "name"'),
-            ('', 'с незаполненным полем "name"'),
+            ('', 'с пустым полем "name"'),
             (123, 'со значением не строкового типа int в поле "name"'),
             (True, 'со значением не строкового типа bool в поле "name"'),
             ('Pepega', ', которого нет в базе')
@@ -54,26 +45,18 @@ class TestDeleteCharacters:
     )
     @allure.description('Удаление героя c некорректно заполненным полем "name"')
     def test_delete_character_with_invalid_name(self, reset, auth, invalid_data, by_invalid_name):
-        with allure.step(f'Удалить героя {by_invalid_name}'):
-            response = HttpClient.delete_character(
-                url=f'{CHARACTER_PATH}?name={invalid_data}',
-                auth=auth
-            )
+        with allure.step(f'Отправляем запрос на удаление героя {by_invalid_name}'):
+            response = client.delete_character(name=invalid_data, auth=auth)
 
-        with allure.step('Поверить, что нельзя удалить героя'):
-            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
-                        f'Не должно работать удаление героя {by_invalid_name}')
+        with allure.step('Проверяем, что в ответ приходит статус код 400'):
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST))
 
     @allure.description('Удаление героя без обязательного поля "name"')
     def test_delete_character_wo_required_name(self, reset, auth):
-        with allure.step('Удалить героя без обязательного поля "name"'):
-            response = HttpClient.delete_character(
-                url=CHARACTER_PATH,
-                auth=auth,
-            )
+        with allure.step('Отправляем запрос на удаление героя без обязательного поля "name"'):
+            response = client.delete_character(auth=auth)
 
-        with allure.step('Поверить, что нельзя удалить героя'):
-            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST),
-                        f'Не должно работать удаление героя без обязательного поля "name"')
+        with allure.step('Проверяем, что в ответ приходит 400 статус код и сообщение об ошибке'):
+            assert_that(response.status_code, equal_to(HTTPStatus.BAD_REQUEST))
             assert_that(response.text, contains_string('name parameter is required'),
                         f'Должно приходить сообщение об обязательности заполнения поля')

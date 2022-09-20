@@ -1,48 +1,26 @@
 import requests
 from requests import Response
 
-from constants import TEST_URL
-
-
 class HttpClient:
+    def __init__(self):
+        self.TEST_URL = 'http://rest.test.ivi.ru/v2'
+        self.CHARACTERS_PATH = '/characters'
+        self.CHARACTER_PATH = '/character'
 
-    @staticmethod
-    def get_characters(url: str, json=None, auth=None) -> Response:
-        return HttpClient._send(url, json, auth, 'GET')
+    def get_characters(self, params: dict = None, auth=None,) -> Response:
+        return requests.get(self.TEST_URL+self.CHARACTERS_PATH, params, auth=auth)
 
-    @staticmethod
-    def get_character(url: str, params: dict = None, auth=None) -> Response:
-        return HttpClient._send(url, params, auth, 'GET')
+    def get_character(self, name: str = None, auth=None) -> Response:
+        return requests.get(self.TEST_URL+self.CHARACTER_PATH, params={'name': name}, auth=auth)
 
-    @staticmethod
-    def create_character(url: str, json: dict = None, auth=None) -> Response:
-        return HttpClient._send(url, json, auth, 'POST')
+    def create_character(self, json: dict = None, auth=None,) -> Response:
+        return requests.post(self.TEST_URL, json=json, auth=auth)
 
-    @staticmethod
-    def edit_character(url: str, json: dict = None, auth=None) -> Response:
-        return HttpClient._send(url, json, auth, 'PUT')
+    def edit_character(self, json: dict = None, auth=None) -> Response:
+        return requests.put(self.TEST_URL, json=json, auth=auth)
 
-    @staticmethod
-    def delete_character(url: str, params: dict = None, auth=None) -> Response:
-        return HttpClient._send(url, params, auth, 'DELETE')
+    def delete_character(self, name: str = None, auth=None) -> Response:
+        return requests.delete(self.TEST_URL, params={'name': name}, auth=auth)
 
-    @staticmethod
-    def reset_changes(url: str, auth=None) -> Response:
-        return requests.post(url, auth=auth)
-
-    @staticmethod
-    def _send(path: str = None, json: dict = None, auth=None, method: str = None) -> Response:
-        url = f"{TEST_URL}{path}"
-
-        if method == 'GET':
-            response = requests.get(url, json=json, auth=auth)
-        elif method == 'POST':
-            response = requests.post(url, json=json, auth=auth)
-        elif method == 'PUT':
-            response = requests.put(url, json=json, auth=auth)
-        elif method == 'DELETE':
-            response = requests.delete(url, json=json, auth=auth)
-        else:
-            raise Exception(f"Получен некорректный HTTP метод'{method}'")
-
-        return response
+    def reset_changes(self, auth) -> Response:
+        return requests.post(self.TEST_URL+'/reset', auth=auth)
